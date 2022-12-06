@@ -44,7 +44,7 @@ for (let row of moveInput) {
 }
 
 for (let move of moves) {
-  crates[move.toIdx].splice(crates[move.toIdx].length, 0, ...crates[move.fromIdx].splice(-1 * parseInt(move.moveCount)).reverse());
+  crates[move.toIdx].splice(crates[move.toIdx].length, 0, ...crates[move.fromIdx].splice(-1 * parseInt(move.moveCount)));
 }
 
 let output = '';
