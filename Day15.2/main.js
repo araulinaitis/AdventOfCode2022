@@ -11,6 +11,8 @@ const matchRegex = /Sensor at x=(-*[0-9]+), y=(-*[0-9]+): closest beacon is at x
 
 let board = {};
 
+let noBeacons = [];
+
 let minX = Infinity;
 let minY = Infinity;
 let maxX = -Infinity;
@@ -39,17 +41,16 @@ class Sensor extends Node {
     board[x][y] = this;
   }
 
-  setNoBeacons() {
+  setNoBeacons(y) {
     for (let xOffset = -this.beaconDistance; xOffset <= this.beaconDistance; ++xOffset) {
       // for (let yOffset = -this.beaconDistance; yOffset <= this.beaconDistance; ++yOffset) {
-        // let targetY = yOffset;
-      //   if ((this.y + yOffset) !== 2000000) continue;
+      //   let targetY = yOffset;
+      let targetY = y;
       if (Math.abs(xOffset) + Math.abs(targetY - this.y) > this.beaconDistance) continue; // manhattan distance
-      // if (board?.[this.x + xOffset]?.[this.y + yOffset] !== '') continue;
       const thisNode = board?.[this.x + xOffset]?.[targetY];
       if (thisNode instanceof Node) continue;
       new NoBeacon(this.x + xOffset, targetY);
-      // if (board?.[this.x + xOffset]?.[this.y + yOffset] == '') new NoBeacon(this.x + xOffset, this.y + yOffset);
+      noBeacons.push({x: this.x + xOffset, y: targetY});
       // }
     }
   }
@@ -80,46 +81,62 @@ for (let row of input) {
   sensors.push(newSensor);
 }
 
-// for (let x = minX; x <= maxX; ++x) {
-//   if (!board[x]) board[x] = {};
-//   for (let y = minY; y <= maxY; ++y) {
-//     let thisNode = board[x][y];
-//     if (thisNode instanceof Sensor || thisNode instanceof Beacon) continue;
-//     // for (let sensor of sensors) {
-//     //   if (sensor.manhattanDistanceTo(x, y) <= sensor.beaconDistance) {
-//     //     new NoBeacon(x, y);
-//     //     continue;
-//     //   }
-//     // }
-//     if (!board[x][y]) board[x][y] = '';
-//   }
-// }
-
 // print();
-
 console.log('');
-let idx = 1;
-for (let sensor of sensors) {
-  // print();
-  // console.log('');
-  sensor.setNoBeacons();
-  // print();
-  console.log(idx++);
+
+let done = false;
+for (let targetY = 0; targetY <= 4000000; ++targetY) {
+  // reset board and noBeacons
+  sensors = [];
+  board = {};
+  for (let row of input) {
+    const matchedStr = row.match(matchRegex);
+    const [_, sensorX, sensorY, beaconX, beaconY] = matchedStr;
+    let newSensor = new Sensor(parseInt(sensorX), parseInt(sensorY));
+    let newBeacon = new Beacon(parseInt(beaconX), parseInt(beaconY));
+    newSensor.beacon = newBeacon;
+    newSensor.beaconDistance = newSensor.manhattanDistanceTo(newBeacon.x, newBeacon.y);
+    sensors.push(newSensor);
+  }
+
+  // for (let noBeacon of noBeacons) {
+  //   delete board[noBeacon.x][noBeacon.y];
+  // }
+  // noBeacons = [];
+
+  let idx = 1;
+  for (let sensor of sensors) {
+    sensor.setNoBeacons(targetY);
+  }
+
+  // check if this y value has a single open spot inside
+  for (let targetX = 0; targetX < 4000000; ++targetX) {
+    if (board?.[targetX]?.[targetY] == undefined || board[targetX][targetY] == '') {
+      // check left and right to see if there's no beacon on both sides
+      if (board?.[targetX - 1][targetY] instanceof NoBeacon && board?.[targetX + 1]?.[targetY] instanceof NoBeacon) {
+        console.log(targetX, targetY);
+        done = true;
+        break;
+      }
+    }
+  }
+  if (done) break;
+  console.log(targetY);
 }
 
 // print();
 // console.log(Object.values(board).map(col => col[targetY]));
-console.log(
-  Object.values(board)
-    .map(col => col[targetY])
-    .filter(el => el instanceof NoBeacon).length
-);
-let noBeaconCount = 0;
-for (let x = minX; x <= maxX; ++x) {
-  // console.log(board?.[x]?.[targetY]);
-  if (board?.[x]?.[targetY] instanceof NoBeacon) noBeaconCount++;
-}
-console.log(noBeaconCount);
+// console.log(
+//   Object.values(board)
+//     .map(col => col[targetY])
+//     .filter(el => el instanceof NoBeacon).length
+// );
+// let noBeaconCount = 0;
+// for (let x = minX; x <= maxX; ++x) {
+//   // console.log(board?.[x]?.[targetY]);
+//   if (board?.[x]?.[targetY] instanceof NoBeacon) noBeaconCount++;
+// }
+// console.log(noBeaconCount);
 
 // function print() {
 //   console.log(
